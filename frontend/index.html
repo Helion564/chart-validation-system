@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Chart Validation System — Dashboard</title>
+<meta name="description" content="DevSecOps-integrated chart validation dashboard. Validate chart data against objective compliance, data quality, and visualization best practices."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--surface:#161b22;--surface2:#21262d;--border:#30363d;
+  --accent:#58a6ff;--accent2:#3fb950;--warn:#d29922;--danger:#f85149;
+  --text:#e6edf3;--muted:#8b949e;--radius:12px;
+  --grad:linear-gradient(135deg,#1f6feb 0%,#388bfd 100%);
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+a{color:var(--accent);text-decoration:none}
+
+/* ── Header ── */
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:.6rem;font-weight:700;font-size:1.1rem}
+.logo-icon{width:32px;height:32px;background:var(--grad);border-radius:8px;display:grid;place-items:center;font-size:1rem}
+.badge{background:#1f6feb22;border:1px solid #388bfd44;color:var(--accent);padding:.15rem .5rem;border-radius:20px;font-size:.7rem;font-weight:600}
+
+/* ── Layout ── */
+main{flex:1;padding:2rem;max-width:1280px;margin:0 auto;width:100%}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+@media(max-width:900px){.grid-2{grid-template-columns:1fr}.grid-3{grid-template-columns:1fr 1fr}}
+
+/* ── Cards ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem}
+.card-title{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:1rem}
+
+/* ── Form ── */
+.form-group{margin-bottom:1rem}
+label{display:block;font-size:.8rem;font-weight:500;color:var(--muted);margin-bottom:.4rem}
+input,textarea,select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.6rem .9rem;color:var(--text);font-size:.9rem;font-family:inherit;outline:none;transition:border-color .2s}
+input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+textarea{resize:vertical;min-height:80px;font-family:'Inter',monospace}
+
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.4rem;border-radius:8px;font-size:.9rem;font-weight:600;cursor:pointer;border:none;transition:all .2s}
+.btn-primary{background:var(--grad);color:#fff}
+.btn-primary:hover{opacity:.88;transform:translateY(-1px)}
+.btn-primary:active{transform:translateY(0)}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
+.btn-full{width:100%;justify-content:center}
+
+/* ── Score Gauge ── */
+.gauge-wrap{text-align:center;padding:1.5rem 0}
+.gauge-ring{position:relative;width:140px;height:140px;margin:0 auto 1rem}
+.gauge-ring svg{transform:rotate(-90deg)}
+.gauge-ring .track{fill:none;stroke:var(--surface2);stroke-width:12}
+.gauge-ring .fill{fill:none;stroke-width:12;stroke-linecap:round;transition:stroke-dashoffset 1s cubic-bezier(.4,0,.2,1),stroke .5s}
+.gauge-label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.gauge-score{font-size:2rem;font-weight:700;line-height:1}
+.gauge-pct{font-size:.75rem;color:var(--muted)}
+.status-badge{display:inline-block;padding:.3rem 1rem;border-radius:20px;font-weight:700;font-size:.85rem;letter-spacing:.04em}
+.status-valid{background:#3fb95022;color:var(--accent2);border:1px solid #3fb95044}
+.status-invalid{background:#f8514922;color:var(--danger);border:1px solid #f8514944}
+
+/* ── Breakdown bars ── */
+.dim-row{margin-bottom:.9rem}
+.dim-header{display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:.3rem}
+.dim-name{color:var(--muted)}
+.dim-val{font-weight:600}
+.dim-bar{height:6px;border-radius:3px;background:var(--surface2);overflow:hidden}
+.dim-fill{height:100%;border-radius:3px;transition:width 1s cubic-bezier(.4,0,.2,1)}
+
+/* ── Issue/Warning/Rec lists ── */
+.tag-list{display:flex;flex-direction:column;gap:.5rem;max-height:220px;overflow-y:auto}
+.tag-item{display:flex;gap:.5rem;align-items:flex-start;font-size:.82rem;padding:.5rem .7rem;border-radius:6px;line-height:1.4}
+.tag-item .icon{flex-shrink:0;margin-top:.05rem}
+.tag-issue{background:#f8514910;border-left:3px solid var(--danger)}
+.tag-warn{background:#d2992210;border-left:3px solid var(--warn)}
+.tag-rec{background:#58a6ff10;border-left:3px solid var(--accent)}
+.empty-msg{color:var(--muted);font-size:.82rem;text-align:center;padding:1rem 0}
+
+/* ── Chart canvas ── */
+.chart-container{position:relative;height:260px}
+
+/* ── Stat tiles ── */
+.stat-val{font-size:1.8rem;font-weight:700;line-height:1}
+.stat-label{font-size:.75rem;color:var(--muted);margin-top:.25rem}
+
+/* ── Loading spinner ── */
+.spinner{display:none;width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading .spinner{display:block}
+.loading .btn-text{display:none}
+
+/* ── Toast ── */
+#toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--surface2);border:1px solid var(--border);padding:.75rem 1.2rem;border-radius:10px;font-size:.85rem;transform:translateY(100px);opacity:0;transition:all .3s;z-index:999}
+#toast.show{transform:translateY(0);opacity:1}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">📊</div>
+    Chart Validation System
+    <span class="badge">v2.0.0</span>
+  </div>
+  <div style="display:flex;gap:1rem;align-items:center">
+    <a href="/docs" target="_blank" class="btn btn-secondary" style="padding:.4rem .9rem;font-size:.8rem">Swagger UI</a>
+    <a href="/metrics" target="_blank" class="btn btn-secondary" style="padding:.4rem .9rem;font-size:.8rem">Metrics</a>
+  </div>
+</header>
+
+<main>
+  <!-- Stat tiles -->
+  <div class="grid-3" style="margin-bottom:1.5rem" id="stat-tiles">
+    <div class="card" style="display:flex;align-items:center;gap:1rem">
+      <div style="font-size:2rem">✅</div>
+      <div><div class="stat-val" id="stat-total">0</div><div class="stat-label">Total Validations</div></div>
+    </div>
+    <div class="card" style="display:flex;align-items:center;gap:1rem">
+      <div style="font-size:2rem">🟢</div>
+      <div><div class="stat-val" id="stat-valid" style="color:var(--accent2)">0</div><div class="stat-label">Valid Charts</div></div>
+    </div>
+    <div class="card" style="display:flex;align-items:center;gap:1rem">
+      <div style="font-size:2rem">📈</div>
+      <div><div class="stat-val" id="stat-avg" style="color:var(--accent)">—</div><div class="stat-label">Avg Score</div></div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- LEFT: Form -->
+    <div style="display:flex;flex-direction:column;gap:1.5rem">
+      <div class="card">
+        <div class="card-title">Chart Payload</div>
+        <div class="form-group">
+          <label for="chart_type">Chart Type</label>
+          <select id="chart_type">
+            <option value="">-- Select --</option>
+            <option value="bar">Bar</option>
+            <option value="line">Line</option>
+            <option value="pie">Pie</option>
+            <option value="scatter">Scatter</option>
+            <option value="histogram">Histogram</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="title">Title</label>
+          <input id="title" type="text" placeholder="e.g. Monthly Revenue Q1 2025"/>
+        </div>
+        <div class="form-group">
+          <label for="labels">Labels (comma-separated)</label>
+          <input id="labels" type="text" placeholder="Jan, Feb, Mar, Apr"/>
+        </div>
+        <div class="form-group">
+          <label for="data">Data (comma-separated numbers)</label>
+          <input id="data" type="text" placeholder="100, 200, 150, 300"/>
+        </div>
+        <div class="form-group">
+          <label for="objective">Objective</label>
+          <textarea id="objective" placeholder="e.g. Compare monthly revenue figures across Q1 2025"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="dataset_name">Dataset Name (optional)</label>
+          <input id="dataset_name" type="text" placeholder="e.g. Sales Data 2025"/>
+        </div>
+        <div style="display:flex;gap:.75rem">
+          <button class="btn btn-primary btn-full" id="validate-btn" onclick="validate()">
+            <div class="spinner"></div>
+            <span class="btn-text">🔍 Validate Chart</span>
+          </button>
+          <button class="btn btn-secondary" onclick="loadDemo()" title="Load demo data">⚡</button>
+        </div>
+      </div>
+
+      <!-- Chart Preview -->
+      <div class="card">
+        <div class="card-title">Chart Preview</div>
+        <div class="chart-container">
+          <canvas id="chartCanvas"></canvas>
+          <div id="chart-placeholder" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.85rem">Enter data above and validate to preview</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Results -->
+    <div style="display:flex;flex-direction:column;gap:1.5rem">
+      <!-- Score Gauge -->
+      <div class="card">
+        <div class="card-title">Validation Score</div>
+        <div class="gauge-wrap" id="gauge-wrap">
+          <div class="gauge-ring">
+            <svg viewBox="0 0 140 140" width="140" height="140">
+              <circle class="track" cx="70" cy="70" r="54"/>
+              <circle class="fill" id="gauge-fill" cx="70" cy="70" r="54"
+                stroke-dasharray="339.3" stroke-dashoffset="339.3" stroke="var(--accent2)"/>
+            </svg>
+            <div class="gauge-label">
+              <div class="gauge-score" id="gauge-score">—</div>
+              <div class="gauge-pct">/ 100</div>
+            </div>
+          </div>
+          <div id="status-badge-wrap"></div>
+          <div style="font-size:.75rem;color:var(--muted);margin-top:.5rem" id="gauge-hint">Submit a chart to see results</div>
+        </div>
+
+        <!-- Dimension breakdown -->
+        <div id="breakdown-section" style="display:none;margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem">
+          <div class="dim-row" id="dim-structure"></div>
+          <div class="dim-row" id="dim-objective"></div>
+          <div class="dim-row" id="dim-quality"></div>
+          <div class="dim-row" id="dim-viz"></div>
+        </div>
+      </div>
+
+      <!-- Issues -->
+      <div class="card">
+        <div class="card-title">🚨 Issues <span id="issue-count" style="color:var(--danger)"></span></div>
+        <div class="tag-list" id="issues-list"><div class="empty-msg">No issues detected</div></div>
+      </div>
+
+      <!-- Warnings -->
+      <div class="card">
+        <div class="card-title">⚠️ Warnings <span id="warn-count" style="color:var(--warn)"></span></div>
+        <div class="tag-list" id="warnings-list"><div class="empty-msg">No warnings</div></div>
+      </div>
+
+      <!-- Recommendations -->
+      <div class="card">
+        <div class="card-title">💡 Recommendations <span id="rec-count" style="color:var(--accent)"></span></div>
+        <div class="tag-list" id="recs-list"><div class="empty-msg">No recommendations</div></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+const API_BASE = '';
+let chartInstance = null;
+
+const PALETTE = ['#58a6ff','#3fb950','#f78166','#d29922','#bc8cff','#79c0ff','#56d364'];
+
+function toast(msg, type='info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderColor = type==='error' ? 'var(--danger)' : type==='success' ? 'var(--accent2)' : 'var(--border)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function loadDemo() {
+  document.getElementById('chart_type').value = 'bar';
+  document.getElementById('title').value = 'Q1 2025 Revenue by Region';
+  document.getElementById('labels').value = 'North, South, East, West, Central';
+  document.getElementById('data').value = '450, 380, 520, 290, 410';
+  document.getElementById('objective').value = 'Compare regional revenue figures for Q1 2025';
+  document.getElementById('dataset_name').value = 'Sales Report 2025';
+  toast('Demo data loaded!');
+}
+
+function dimBar(containerId, label, value, color) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = `
+    <div class="dim-header">
+      <span class="dim-name">${label}</span>
+      <span class="dim-val" style="color:${color}">${value}</span>
+    </div>
+    <div class="dim-bar">
+      <div class="dim-fill" style="width:0%;background:${color}" data-target="${value}"></div>
+    </div>`;
+  setTimeout(() => {
+    el.querySelector('.dim-fill').style.width = value + '%';
+  }, 50);
+}
+
+function scoreColor(s) {
+  if (s >= 80) return 'var(--accent2)';
+  if (s >= 60) return 'var(--warn)';
+  return 'var(--danger)';
+}
+
+function renderGauge(score) {
+  const circumference = 339.3;
+  const fill = document.getElementById('gauge-fill');
+  const offset = circumference - (score / 100) * circumference;
+  const color = scoreColor(score);
+  fill.style.stroke = color;
+  fill.style.strokeDashoffset = offset;
+  document.getElementById('gauge-score').textContent = score;
+  document.getElementById('gauge-score').style.color = color;
+}
+
+function renderTags(listId, items, cls, icon) {
+  const el = document.getElementById(listId);
+  if (!items || items.length === 0) {
+    el.innerHTML = '<div class="empty-msg">None detected ✓</div>';
+    return;
+  }
+  el.innerHTML = items.map(t =>
+    `<div class="tag-item ${cls}"><span class="icon">${icon}</span><span>${t}</span></div>`
+  ).join('');
+}
+
+function renderChart(type, labels, data) {
+  document.getElementById('chart-placeholder').style.display = 'none';
+  const ctx = document.getElementById('chartCanvas').getContext('2d');
+  if (chartInstance) chartInstance.destroy();
+
+  const datasets = [{
+    label: document.getElementById('title').value || 'Data',
+    data: data,
+    backgroundColor: type === 'line' ? 'rgba(88,166,255,0.15)' : PALETTE,
+    borderColor: type === 'line' ? '#58a6ff' : PALETTE,
+    borderWidth: 2,
+    fill: type === 'line',
+    tension: 0.4,
+    pointBackgroundColor: '#58a6ff',
+    pointRadius: 4,
+  }];
+
+  const chartType = (type === 'histogram') ? 'bar' : type;
+
+  chartInstance = new Chart(ctx, {
+    type: chartType,
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#8b949e', font: { family: 'Inter' } } },
+      },
+      scales: ['bar','line','scatter','histogram'].includes(type) ? {
+        x: { ticks: { color: '#8b949e' }, grid: { color: '#21262d' } },
+        y: { ticks: { color: '#8b949e' }, grid: { color: '#21262d' } }
+      } : {},
+    }
+  });
+}
+
+async function validate() {
+  const btn = document.getElementById('validate-btn');
+  btn.classList.add('loading');
+
+  const labelsRaw = document.getElementById('labels').value;
+  const dataRaw = document.getElementById('data').value;
+  const labels = labelsRaw ? labelsRaw.split(',').map(s => s.trim()).filter(Boolean) : undefined;
+  const data = dataRaw ? dataRaw.split(',').map(s => parseFloat(s.trim())).filter(v => !isNaN(v)) : undefined;
+
+  const payload = {
+    chart_type: document.getElementById('chart_type').value || undefined,
+    title: document.getElementById('title').value || undefined,
+    labels: labels?.length ? labels : undefined,
+    data: data?.length ? data : undefined,
+    objective: document.getElementById('objective').value || undefined,
+    dataset_name: document.getElementById('dataset_name').value || undefined,
+  };
+
+  try {
+    const res = await fetch(`${API_BASE}/validate-chart`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      toast(err.detail || 'Validation failed', 'error');
+      btn.classList.remove('loading');
+      return;
+    }
+
+    const result = await res.json();
+    renderResults(result, payload.chart_type, labels, data);
+    await fetchMetrics();
+    toast('Validation complete!', 'success');
+  } catch (e) {
+    toast('Could not reach the API. Is the server running?', 'error');
+  } finally {
+    btn.classList.remove('loading');
+  }
+}
+
+function renderResults(r, type, labels, data) {
+  // Gauge
+  renderGauge(r.score);
+  document.getElementById('gauge-hint').textContent =
+    `Weighted across 4 dimensions`;
+
+  // Status badge
+  const sw = document.getElementById('status-badge-wrap');
+  sw.innerHTML = `<span class="status-badge status-${r.status}">${r.status.toUpperCase()}</span>`;
+
+  // Breakdown
+  const bd = r.breakdown;
+  document.getElementById('breakdown-section').style.display = 'block';
+  dimBar('dim-structure', 'Structure', bd.structure, scoreColor(bd.structure));
+  dimBar('dim-objective', 'Objective Match', bd.objective_match, scoreColor(bd.objective_match));
+  dimBar('dim-quality', 'Data Quality', bd.data_quality, scoreColor(bd.data_quality));
+  dimBar('dim-viz', 'Viz Best Practices', bd.visualization_best_practices, scoreColor(bd.visualization_best_practices));
+
+  // Tags
+  document.getElementById('issue-count').textContent = r.issues.length ? `(${r.issues.length})` : '';
+  document.getElementById('warn-count').textContent = r.warnings.length ? `(${r.warnings.length})` : '';
+  document.getElementById('rec-count').textContent = r.recommendations.length ? `(${r.recommendations.length})` : '';
+
+  renderTags('issues-list', r.issues, 'tag-issue', '🚨');
+  renderTags('warnings-list', r.warnings, 'tag-warn', '⚠️');
+  renderTags('recs-list', r.recommendations, 'tag-rec', '💡');
+
+  // Chart preview
+  if (type && labels?.length && data?.length) {
+    renderChart(type, labels, data);
+  }
+}
+
+async function fetchMetrics() {
+  try {
+    const res = await fetch(`${API_BASE}/metrics`);
+    if (!res.ok) return;
+    const m = await res.json();
+    document.getElementById('stat-total').textContent = m.total_validations;
+    document.getElementById('stat-valid').textContent = m.valid_count;
+    document.getElementById('stat-avg').textContent =
+      m.total_validations > 0 ? m.average_score.toFixed(1) : '—';
+  } catch (_) {}
+}
+
+// Initial metrics load
+fetchMetrics();
+</script>
+</body>
+</html>

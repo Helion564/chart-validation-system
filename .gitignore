@@ -28,3 +28,15 @@ Thumbs.db
 .pytest_cache/
 htmlcov/
 .coverage
+coverage.xml
+
+# ── Database (runtime artifact) ───────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ── CI / Test artifacts ────────────────────────
+newman-results.json
+bandit-report.json
+trivy-results.sarif
+sbom.spdx.json

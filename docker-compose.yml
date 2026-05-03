@@ -1,0 +1,51 @@
+# ============================================================
+# docker-compose.yml — Chart Validation System v2.0.0
+# Local development + integration testing stack
+# Usage: docker-compose up -d
+# ============================================================
+
+version: "3.9"
+
+services:
+  # ── Application ────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime        # Use the slim runtime stage
+    image: chart-validation-system:latest
+    container_name: chart-validation-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # Override any defaults here — use .env file for secrets
+      APP_VERSION: "2.0.0"
+      DEBUG: "false"
+      LOG_LEVEL: "INFO"
+      HOST: "0.0.0.0"
+      PORT: "8000"
+      # SECRET_KEY and other secrets should be in a .env file
+    env_file:
+      - .env                 # Optional — won't fail if absent
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/').read()"
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    networks:
+      - chart-net
+    labels:
+      - "com.project=chart-validation-system"
+      - "com.version=2.0.0"
+
+networks:
+  chart-net:
+    driver: bridge

@@ -1,0 +1,65 @@
+# Docker ignore — prevents sensitive/unnecessary files from entering the image
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environment
+venv/
+env/
+.venv/
+.env/
+
+# Environment files — secrets must NOT be baked into the image
+.env
+.env.*
+*.env
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Tests & CI (not needed in runtime image)
+tests/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.bandit
+codecov.yml
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+docs/
+
+# CI/CD config
+.github/
+Makefile
+
+# Terraform / IaC
+terraform/
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# Postman
+*.postman_collection.json

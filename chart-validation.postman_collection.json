@@ -1,0 +1,153 @@
+{
+	"info": {
+		"_postman_id": "c6a7d8e9-f0a1-42b3-94c5-e6d7f8a9b0c1",
+		"name": "Chart Validation System",
+		"description": "API collection for testing the DevSecOps-Based Chart Validation & Objective Compliance System.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "System",
+			"item": [
+				{
+					"name": "Health Check",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response should be healthy\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql(\"healthy\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Validation",
+			"item": [
+				{
+					"name": "Validate Chart - Valid Data",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Status should be valid\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql(\"valid\");",
+									"    pm.expect(jsonData.score).to.be.at.least(70);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"chart_type\": \"bar\",\n  \"title\": \"Q1 Revenue Growth\",\n  \"labels\": [\"January\", \"February\", \"March\"],\n  \"data\": [12000, 15000, 17500],\n  \"objective\": \"Demonstrate the month-over-month increase in sales revenue.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/validate-chart",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"validate-chart"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Validate Chart - Missing Data (Negative Test)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Status should be invalid\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql(\"invalid\");",
+									"    pm.expect(jsonData.score).to.be.below(70);",
+									"    pm.expect(jsonData.issues).to.include(\"Missing or empty 'data' field.\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"chart_type\": \"bar\",\n  \"title\": \"Empty Data Chart\",\n  \"labels\": [],\n  \"data\": [],\n  \"objective\": \"Test empty data handling\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/validate-chart",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"validate-chart"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://127.0.0.1:8000",
+			"type": "string"
+		}
+	]
+}

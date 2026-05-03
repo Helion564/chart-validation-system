@@ -5,9 +5,9 @@
 # ============================================================
 
 # ── Stage 1: Builder ─────────────────────────────────────────
-# Pin to exact digest — prevents silent upstream changes (run `docker pull python:3.11-slim` to refresh)
-FROM python:3.11-slim@sha256:4edd3c955b6b6b9b2b1e7e3b9e5b6e6e6b9e5b6e6e6b9e5b6e6e6b9e5b6e6e6 AS builder
-# If digest is stale, update with: docker inspect python:3.11-slim --format='{{index .RepoDigests 0}}'
+# To pin to an exact digest (recommended for production), replace the line below with:
+#   FROM python:3.11-slim@sha256:<digest> AS builder
+# Get the current digest with: docker inspect python:3.11-slim --format='{{index .RepoDigests 0}}'
 FROM python:3.11-slim AS builder
 
 WORKDIR /build

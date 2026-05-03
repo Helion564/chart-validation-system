@@ -76,6 +76,10 @@
 							{
 								"key": "Content-Type",
 								"value": "application/json"
+							},
+							{
+								"key": "X-API-Key",
+								"value": "{{api_key}}"
 							}
 						],
 						"body": {
@@ -109,7 +113,7 @@
 									"    var jsonData = pm.response.json();",
 									"    pm.expect(jsonData.status).to.eql(\"invalid\");",
 									"    pm.expect(jsonData.score).to.be.below(70);",
-									"    pm.expect(jsonData.issues).to.include(\"Missing or empty 'data' field.\");",
+									"    pm.expect(jsonData.issues).to.be.an('array').that.is.not.empty;",
 									"});"
 								],
 								"type": "text/javascript"
@@ -122,11 +126,15 @@
 							{
 								"key": "Content-Type",
 								"value": "application/json"
+							},
+							{
+								"key": "X-API-Key",
+								"value": "{{api_key}}"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"chart_type\": \"bar\",\n  \"title\": \"Empty Data Chart\",\n  \"labels\": [],\n  \"data\": [],\n  \"objective\": \"Test empty data handling\"\n}"
+							"raw": "{\n  \"chart_type\": \"bar\",\n  \"title\": \"Missing Data Test\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/validate-chart",

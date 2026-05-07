@@ -44,7 +44,7 @@ jobs:
       - name: Install Linting Tools
         run: |
           pip install --upgrade pip
-          pip install flake8 black
+          pip install -r requirements-dev.txt
 
       - name: Run flake8 — syntax errors and undefined names
         run: |
@@ -93,7 +93,7 @@ jobs:
       - name: Install Dependencies
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements.txt -r requirements-dev.txt
 
       - name: Run Pytest with Coverage
         run: |
@@ -167,7 +167,7 @@ jobs:
           cache: "pip"
 
       - name: Install Bandit
-        run: pip install bandit[toml]
+        run: pip install -r requirements-dev.txt
 
       - name: Run Bandit — full report (all severities, JSON output)
         # || true: don't fail on medium findings — we capture JSON for review
@@ -210,8 +210,7 @@ jobs:
       - name: Install Dependencies + Safety
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install "safety>=3.2.0"
+          pip install -r requirements.txt -r requirements-dev.txt
 
       - name: Run Safety Dependency Scan
         # `safety scan` is the v3+ command; `safety check` was removed

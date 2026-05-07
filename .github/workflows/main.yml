@@ -297,7 +297,8 @@ jobs:
 
       - name: Smoke Test — Metrics Endpoint
         run: |
-          curl -sf http://localhost:8000/metrics | python3 -c "
+          curl -sf http://localhost:8000/metrics \
+            -H "X-API-Key: ${CI_API_KEY}" | python3 -c "
           import sys, json
           data = json.load(sys.stdin)
           assert 'total_validations' in data, f'Missing metrics fields: {data}'

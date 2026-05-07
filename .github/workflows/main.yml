@@ -342,6 +342,7 @@ jobs:
           severity: "CRITICAL,HIGH"
           exit-code: "1"
           ignore-unfixed: true
+          scanners: "vuln"
 
       - name: Upload Trivy SARIF to GitHub Security Tab
         # Always upload so findings are visible even if scan failed

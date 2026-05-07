@@ -92,6 +92,14 @@ const DashboardPage = () => {
       data: '100, 150, 200, 175',
       objective: 'Show monthly revenue trend over time',
       dataset_name: 'Misleading Report'
+    },
+    {
+      chart_type: 'pie',
+      title: 'Global User Distribution by Region',
+      labels: 'North America, South America, Europe, Africa, Asia, Oceania, Antarctica, Arctic, Unknown, Other, Misc, Extra',
+      data: '500, 200, 400, 150, 800, 50, 5, 2, 10, 5, 5, 5',
+      objective: 'Show trend of users across the globe',
+      dataset_name: 'Overcrowded Data'
     }
   ];
 

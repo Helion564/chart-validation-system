@@ -133,15 +133,16 @@ npm run dev -- --port 5174
 
 ## 🛡️ DevSecOps Integration
 
-The system includes a pre-configured **8-job GitHub Actions pipeline** that performs:
+The system includes a pre-configured **7-job GitHub Actions pipeline** that performs:
 *   **SAST**: Bandit security scanning.
 *   **Linting**: Flake8 and Black verification.
-*   **DCA**: Dependency vulnerability checks.
+*   **DCA**: Dependency vulnerability checks (Safety).
 *   **Testing**: Pytest with coverage enforcement (80%+).
-*   **Docker**: Multi-stage, non-root builds with health checks.
+*   **Docker**: Multi-stage, non-root builds on Alpine Linux with health checks.
+*   **SBOM**: CycloneDX Software Bill of Materials generation.
 
 ---
 
 <div align="center">
-Built with FastAPI · React · SQLAlchemy · Framer Motion · Bandit · slowapi
+Built with FastAPI · React · SQLAlchemy · Framer Motion · Bandit · Safety
 </div>

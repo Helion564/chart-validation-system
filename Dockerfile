@@ -8,7 +8,7 @@
 FROM node:20-bookworm-slim AS frontend-builder
 WORKDIR /build-frontend
 COPY frontend/package*.json ./
-RUN npm clean-install
+RUN npm install --no-audit --no-fund
 COPY frontend/ ./
 RUN npm run build
 

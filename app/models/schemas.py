@@ -12,8 +12,32 @@ from pydantic import BaseModel, Field, model_validator
 from typing import Any, Dict, List, Optional
 from datetime import datetime
 
-
 # ─── Request Schemas ─────────────────────────────────────────────────────────
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: Optional[str] = None
+    role: Optional[str] = None
+
+
+class UserCreate(BaseModel):
+    username: str = Field(..., max_length=50)
+    password: str = Field(..., min_length=8, max_length=128)
+    role: Optional[str] = Field("user", max_length=20)
+
+
+class UserOut(BaseModel):
+    id: int
+    username: str
+    role: str
+    is_active: bool
+
+    model_config = {"from_attributes": True}
 
 
 class AxisRange(BaseModel):

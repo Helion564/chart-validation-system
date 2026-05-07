@@ -10,7 +10,6 @@ v3.0.0 — Production-hardened:
   - Pinned DATABASE_URL (real, not a placeholder comment)
 """
 
-import secrets
 import sys
 import logging
 from typing import List
@@ -20,8 +19,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger("app.config")
 
-_DEFAULT_SECRET = "change-me-in-production"
-_DEFAULT_API_KEY = "dev-key-change-me"
+_DEFAULT_SECRET = "change-me-in-production"  # nosec B105
+_DEFAULT_API_KEY = "dev-key-change-me"  # nosec B105
 
 
 class Settings(BaseSettings):
@@ -60,6 +59,9 @@ class Settings(BaseSettings):
     # Set these via environment variables or a .env file — NEVER hardcode.
     SECRET_KEY: SecretStr = SecretStr(_DEFAULT_SECRET)  # nosec B105
     API_KEY: SecretStr = SecretStr(_DEFAULT_API_KEY)  # nosec B105
+    JWT_SECRET_KEY: SecretStr = SecretStr(_DEFAULT_SECRET)  # nosec B105
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     API_KEY_ENABLED: bool = True  # Set False only in test environments
 
     CORS_ORIGINS: List[str] = ["*"]
@@ -87,11 +89,14 @@ def validate_production_secrets(s: Settings) -> None:
     """
     problems = []
 
-    if s.SECRET_KEY.get_secret_value() == _DEFAULT_SECRET:
+    if (
+        s.SECRET_KEY.get_secret_value() == _DEFAULT_SECRET
+        or s.JWT_SECRET_KEY.get_secret_value() == _DEFAULT_SECRET
+    ):
         problems.append(
-            "SECRET_KEY is still the default placeholder. "
-            f"Set SECRET_KEY=<random string> in your environment. "
-            f"Hint: python -c \"import secrets; print(secrets.token_hex(32))\""
+            "SECRET_KEY or JWT_SECRET_KEY is still the default placeholder. "
+            "Set them to a <random string> in your environment. "
+            'Hint: python -c "import secrets; print(secrets.token_hex(32))"'
         )
 
     if s.API_KEY_ENABLED and s.API_KEY.get_secret_value() == _DEFAULT_API_KEY:

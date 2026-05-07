@@ -17,7 +17,11 @@ os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 import asyncio  # noqa: E402
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine  # noqa: E402
+from sqlalchemy.ext.asyncio import (  # noqa: E402
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)  # noqa: E402
 
 from app.core.database import Base, get_db  # noqa: E402
 from app.main import app  # noqa: E402
@@ -51,6 +55,7 @@ asyncio.run(_create_tables())
 
 # ── Override get_db dependency ─────────────────────────────────────────────────
 
+
 async def override_get_db():
     async with TestSessionLocal() as session:
         try:
@@ -65,6 +70,7 @@ app.dependency_overrides[get_db] = override_get_db
 
 
 # ── Test client fixture ────────────────────────────────────────────────────────
+
 
 @pytest.fixture(scope="session")
 def test_client():

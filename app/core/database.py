@@ -20,9 +20,7 @@ from app.core.config import settings
 # ── Engine ────────────────────────────────────────────────────────────────────
 # connect_args only applies to SQLite — required to allow multi-thread use.
 _connect_args = (
-    {"check_same_thread": False}
-    if settings.DATABASE_URL.startswith("sqlite")
-    else {}
+    {"check_same_thread": False} if settings.DATABASE_URL.startswith("sqlite") else {}
 )
 
 engine = create_async_engine(

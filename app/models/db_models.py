@@ -11,10 +11,24 @@ Tables:
 import json
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Float, Index, Integer, String, Text
+from sqlalchemy import DateTime, Index, Integer, String, Text, Boolean
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
+
+
+class User(Base):
+    """Registered users of the API."""
+
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    username: Mapped[str] = mapped_column(
+        String(50), unique=True, index=True, nullable=False
+    )
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    role: Mapped[str] = mapped_column(String(20), nullable=False, default="user")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
 
 class ValidationHistory(Base):
@@ -25,7 +39,9 @@ class ValidationHistory(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     # ── Chart metadata ────────────────────────────────────────────────────
-    chart_type: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
+    chart_type: Mapped[str | None] = mapped_column(
+        String(50), nullable=True, index=True
+    )
     title: Mapped[str | None] = mapped_column(String(255), nullable=True)
     objective: Mapped[str | None] = mapped_column(Text, nullable=True)
     dataset_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -45,7 +61,9 @@ class ValidationHistory(Base):
     # Serialised lists (stored as JSON strings)
     issues_json: Mapped[str] = mapped_column(Text, default="[]", nullable=False)
     warnings_json: Mapped[str] = mapped_column(Text, default="[]", nullable=False)
-    recommendations_json: Mapped[str] = mapped_column(Text, default="[]", nullable=False)
+    recommendations_json: Mapped[str] = mapped_column(
+        Text, default="[]", nullable=False
+    )
 
     # ── Audit ─────────────────────────────────────────────────────────────
     created_at: Mapped[datetime] = mapped_column(

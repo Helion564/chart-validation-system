@@ -63,3 +63,13 @@ terraform/
 
 # Postman
 *.postman_collection.json
+
+# Node / JS
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+.eslintcache
+.cache/

@@ -344,6 +344,11 @@ jobs:
           scanners: "vuln"
           trivyignores: ".trivyignore"
 
+      - name: Debug — Print Trivy Vulnerability Table
+        if: failure()
+        run: |
+          trivy image --severity CRITICAL,HIGH --ignore-unfixed --scanners vuln chart-validation-system:scan-${{ github.sha }}
+
       - name: Upload Trivy SARIF to GitHub Security Tab
         # Always upload so findings are visible even if scan failed
         if: always()

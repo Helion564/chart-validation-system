@@ -1,18 +1,17 @@
-# ── Core ─────────────────────────────────────────────────────
-fastapi>=0.111.0
-uvicorn[standard]>=0.30.0
-pydantic>=2.7.0
-pydantic-settings>=2.3.0
+# ── Core (Pure Python implementations for maximum security) ──
+fastapi==0.111.0
+uvicorn==0.30.1
+pydantic==2.7.4
+pydantic-settings==2.3.4
 
 # ── Persistence ───────────────────────────────────────────────
-sqlalchemy>=2.0.30
-aiosqlite>=0.20.0
+sqlalchemy==2.0.31
+aiosqlite==0.20.0
 
 # ── Rate Limiting ─────────────────────────────────────────────
-slowapi>=0.1.9
-limits>=3.12.0
+slowapi==0.1.9
+limits==3.12.0
 
-# ── Auth & Security ───────────────────────────────────────────
-# NOTE: Password hashing uses Python stdlib (hashlib + hmac) — no passlib needed
-pyjwt>=2.9.0
-python-multipart>=0.0.9
+# ── Auth & Security (No C-extensions, stdlib hashing) ─────────
+pyjwt==2.8.0
+python-multipart==0.0.9

@@ -8,7 +8,7 @@
 # To pin to an exact digest (recommended for production), replace the line below with:
 #   FROM python:3.11-slim@sha256:<digest> AS builder
 # Get the current digest with: docker inspect python:3.11-slim --format='{{index .RepoDigests 0}}'
-FROM python:3.11-slim AS builder
+FROM python:3.11-slim-bookworm AS builder
 
 WORKDIR /build
 
@@ -24,12 +24,15 @@ RUN pip install --upgrade pip \
 
 
 # ── Stage 2: Runtime ─────────────────────────────────────────
-FROM python:3.11-slim AS runtime
+FROM python:3.11-slim-bookworm AS runtime
+
+# Patch OS vulnerabilities (standard hardening)
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 
 # OCI image labels
 LABEL org.opencontainers.image.title="Chart Validation System" \
       org.opencontainers.image.description="DevSecOps-integrated chart validation API" \
-      org.opencontainers.image.version="2.0.0" \
+      org.opencontainers.image.version="3.0.0" \
       org.opencontainers.image.authors="nageshbhagelli" \
       org.opencontainers.image.source="https://github.com/nageshbhagelli/chart-validation-system" \
       org.opencontainers.image.licenses="MIT"

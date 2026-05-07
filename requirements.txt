@@ -1,19 +1,19 @@
 # ── Core ─────────────────────────────────────────────────────
-fastapi>=0.110.0
-uvicorn[standard]>=0.29.0
-pydantic>=2.6.0
-pydantic-settings>=2.2.0
+fastapi>=0.111.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.7.0
+pydantic-settings>=2.3.0
 
 # ── Persistence ───────────────────────────────────────────────
-sqlalchemy>=2.0.0
-aiosqlite>=0.20.0        # async SQLite driver
+sqlalchemy>=2.0.30
+aiosqlite>=0.20.0
 
 # ── Rate Limiting ─────────────────────────────────────────────
 slowapi>=0.1.9
-limits>=3.7.0
+limits>=3.12.0
 
 # ── Auth & Security ───────────────────────────────────────────
-pyjwt>=2.8.0
+pyjwt>=2.9.0
 passlib[bcrypt]>=1.7.4
 python-multipart>=0.0.9
 

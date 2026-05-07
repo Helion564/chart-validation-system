@@ -342,6 +342,7 @@ jobs:
           exit-code: "1"
           ignore-unfixed: true
           scanners: "vuln"
+          trivyignores: ".trivyignore"
 
       - name: Upload Trivy SARIF to GitHub Security Tab
         # Always upload so findings are visible even if scan failed

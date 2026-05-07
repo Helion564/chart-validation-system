@@ -5,9 +5,12 @@ Provides FastAPI dependencies for OAuth2 with Password (and hashing),
 Bearer with JWT tokens.
 """
 
+import hashlib
+import hmac
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from passlib.context import CryptContext
+
 import jwt
 from jwt.exceptions import InvalidTokenError
 from fastapi import Depends, HTTPException, status
@@ -20,18 +23,29 @@ from app.core.database import get_db
 from app.models.db_models import User
 from app.models.schemas import TokenData
 
-pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
-
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+# ─── Password Hashing (stdlib only — no passlib dependency) ──────────────────
 
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    """Hash a password using PBKDF2-HMAC-SHA256 with a random salt."""
+    salt = os.urandom(16)
+    dk = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 260000)
+    return salt.hex() + ":" + dk.hex()
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a password against its PBKDF2-HMAC-SHA256 hash."""
+    try:
+        salt_hex, dk_hex = hashed_password.split(":", 1)
+        salt = bytes.fromhex(salt_hex)
+        dk = bytes.fromhex(dk_hex)
+        new_dk = hashlib.pbkdf2_hmac("sha256", plain_password.encode(), salt, 260000)
+        return hmac.compare_digest(dk, new_dk)
+    except Exception:
+        return False
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

@@ -110,7 +110,13 @@ Final Score = (Structure × 0.30) + (Objective Match × 0.35)
 
 > **Score ≥ 70** → `valid` &nbsp;&nbsp;|&nbsp;&nbsp; **Score < 70** → `invalid`
 
----
+### *Does your chart actually say what you think it says?*
+
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
+[![Security: Bandit](https://img.shields.io/badge/Security-Bandit-orange)](https://github.com/PyCQA/bandit)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
 ## API Endpoints
 
@@ -220,6 +226,12 @@ curl -s -X POST http://localhost:8000/validate-chart \
   "recommendations": []
 }
 ```
+
+### 4. Default Credentials
+| Username | Password | Role |
+|----------|----------|------|
+| `admin` | `password123` | **Administrator** |
+| `user` | `password123` | **Standard User** |
 
 ---
 

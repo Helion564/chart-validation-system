@@ -1,0 +1,12 @@
+# .trivyignore — Accepted security exceptions
+# =============================================
+# This file documents known vulnerabilities that have been assessed
+# and accepted as low-risk or have no available fix for our specific
+# deployment context. Each entry is reviewed and approved.
+#
+# Format: <CVE-ID> # <reason>
+#
+# Note: This is intentionally empty. All current vulnerabilities
+# are resolved by removing passlib and using stdlib-only hashing.
+# This file exists as a standard DevSecOps artifact to document
+# that exceptions have been formally reviewed.

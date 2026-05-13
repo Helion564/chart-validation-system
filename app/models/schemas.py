@@ -49,17 +49,6 @@ class AxisRange(BaseModel):
         None, max_length=100, description="Axis label (e.g., 'Revenue (USD)')."
     )
 
-# ─── Request Schemas ─────────────────────────────────────────────────────────
-
-
-class AxisRange(BaseModel):
-    """Optional axis configuration for validation of scale integrity."""
-
-    min: Optional[float] = Field(None, description="Minimum axis value.")
-    max: Optional[float] = Field(None, description="Maximum axis value.")
-    label: Optional[str] = Field(
-        None, max_length=100, description="Axis label (e.g., 'Revenue (USD)')."
-    )
 
 
 class ChartData(BaseModel):

@@ -5,13 +5,15 @@ Bearer with JWT tokens.
 
 import hashlib
 import hmac
+import logging
 import os
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import jwt
 from jwt.exceptions import InvalidTokenError
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import OAuth2PasswordBearer, APIKeyHeader
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -121,6 +123,9 @@ def require_role(required_role: str):
         return current_user
 
     return role_checker
+
+
+"""
 Security Middleware — API Key Authentication
 Provides a FastAPI dependency that enforces X-API-Key header authentication.
 
@@ -137,12 +142,7 @@ Usage:
         ...
 """
 
-import secrets
-import logging
-from fastapi import Depends, HTTPException, Security, status
-from fastapi.security import APIKeyHeader
 
-from app.core.config import settings
 
 logger = logging.getLogger("app.security")
 

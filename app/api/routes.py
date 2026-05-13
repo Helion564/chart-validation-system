@@ -92,7 +92,6 @@ async def root() -> HealthResponse:
             "Visit /docs for Swagger UI or /dashboard for the web dashboard."
         ),
     )
-    return {"access_token": access_token, "token_type": "bearer"}
 
 
 # ── Single Validation ─────────────────────────────────────────────────────────

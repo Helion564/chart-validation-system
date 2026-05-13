@@ -14,7 +14,7 @@ import logging.config
 import time
 import uuid
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Any, List, Optional
+from typing import AsyncGenerator
 import os
 
 from fastapi import FastAPI, Request, Response
@@ -65,7 +65,7 @@ logger = logging.getLogger("app.main")
 
 
 @asynccontextmanager
-async def lifespan(application: FastAPI) -> AsyncGenerator[None, None]:
+async def lifespan(application: FastAPI) -> AsyncGenerator:
     """Startup: validate secrets, create DB tables. Shutdown: log."""
     # GAP 1 CLOSED: Hard-exit in production if default secrets detected
     validate_production_secrets(settings)
@@ -123,7 +123,7 @@ def create_app() -> FastAPI:
 
     # Request instrumentation middleware
     @application.middleware("http")
-    async def request_instrumentation(request: Request, call_next: Any) -> Response:
+    async def request_instrumentation(request: Request, call_next) -> Response:
         correlation_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
         start_time = time.perf_counter()
         response: Response = await call_next(request)
@@ -143,17 +143,15 @@ def create_app() -> FastAPI:
     # Routes
     application.include_router(router)
 
-    # Static frontend (Production)
-    frontend_dist = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
-    if os.path.isdir(frontend_dist):
+    # Static frontend
+    frontend_dir = os.path.join(os.path.dirname(__file__), "..", "frontend")
+    if os.path.isdir(frontend_dir):
         application.mount(
             "/dashboard",
-            StaticFiles(directory=frontend_dist, html=True),
+            StaticFiles(directory=frontend_dir, html=True),
             name="frontend",
         )
-        logger.info("Production frontend mounted at /dashboard")
-    else:
-        logger.warning("Production frontend (dist) not found. Run 'npm run build' in frontend directory.")
+        logger.info("Frontend dashboard mounted at /dashboard")
 
     return application
 

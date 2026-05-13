@@ -24,18 +24,10 @@ from slowapi.util import get_remote_address
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from fastapi.security import OAuth2PasswordRequestForm
-from datetime import timedelta
-
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.security import (
-    require_role,
-    verify_password,
-    get_password_hash,
-    create_access_token,
-)
-from app.models.db_models import ValidationHistory, User
+from app.core.security import require_api_key
+from app.models.db_models import ValidationHistory
 from app.models.schemas import (
     ChartData,
     HealthResponse,
@@ -43,9 +35,6 @@ from app.models.schemas import (
     HistoryResponse,
     MetricsResponse,
     ValidationResult,
-    UserCreate,
-    UserOut,
-    Token,
 )
 from app.services.validation_engine import validate_chart
 from app.utils.helpers import timestamp_now
@@ -91,9 +80,7 @@ async def _persist(
 # ── Health ────────────────────────────────────────────────────────────────────
 
 
-@router.get(
-    "/", response_model=HealthResponse, summary="Health Check", include_in_schema=False
-)
+@router.get("/", response_model=HealthResponse, summary="Health Check")
 async def root() -> HealthResponse:
     """Liveness probe — suitable for Docker/Kubernetes."""
     return HealthResponse(
@@ -105,11 +92,12 @@ async def root() -> HealthResponse:
             "Visit /docs for Swagger UI or /dashboard for the web dashboard."
         ),
     )
+    return {"access_token": access_token, "token_type": "bearer"}
 
 
-@router.get(
-    "/health/detailed", summary="Detailed Health Check", include_in_schema=False
-)
+# ── Single Validation ─────────────────────────────────────────────────────────
+
+@router.get("/health/detailed", summary="Detailed Health Check")
 async def health_detailed(db: AsyncSession = Depends(get_db)) -> dict:
     """Readiness probe — includes DB connectivity check."""
     db_ok = True
@@ -134,19 +122,15 @@ async def health_detailed(db: AsyncSession = Depends(get_db)) -> dict:
 # ── Metrics (real, from DB) ────────────────────────────────────────────────────
 
 
-@router.get(
-    "/metrics",
-    response_model=MetricsResponse,
-    summary="Live Metrics",
-    include_in_schema=False,
-    dependencies=[Depends(require_role("admin"))],
-)
+@router.get("/metrics", response_model=MetricsResponse, summary="Live Metrics")
 async def get_metrics(db: AsyncSession = Depends(get_db)) -> MetricsResponse:
     """
     Returns real validation statistics from the database.
     Survives server restarts — always reflects the full history.
     """
-    total_result = await db.execute(select(func.count()).select_from(ValidationHistory))
+    total_result = await db.execute(
+        select(func.count()).select_from(ValidationHistory)
+    )
     total: int = total_result.scalar_one()
 
     valid_result = await db.execute(
@@ -166,47 +150,6 @@ async def get_metrics(db: AsyncSession = Depends(get_db)) -> MetricsResponse:
     )
 
 
-# ── Auth ──────────────────────────────────────────────────────────────────────
-
-
-@router.post("/users/register", response_model=UserOut, summary="Register User")
-async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
-    user = (
-        await db.execute(select(User).where(User.username == user_in.username))
-    ).scalar_one_or_none()
-    if user:
-        raise HTTPException(status_code=400, detail="Username already registered")
-
-    hashed_password = get_password_hash(user_in.password)
-    new_user = User(
-        username=user_in.username, hashed_password=hashed_password, role=user_in.role
-    )
-    db.add(new_user)
-    await db.flush()
-    return new_user
-
-
-@router.post("/token", response_model=Token, summary="Login")
-async def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)
-):
-    user = (
-        await db.execute(select(User).where(User.username == form_data.username))
-    ).scalar_one_or_none()
-    if not user or not verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.username, "role": user.role},
-        expires_delta=access_token_expires,
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
-
-
 # ── Single Validation ─────────────────────────────────────────────────────────
 
 
@@ -215,7 +158,7 @@ async def login_for_access_token(
     response_model=ValidationResult,
     status_code=status.HTTP_200_OK,
     summary="Validate a Single Chart",
-    dependencies=[Depends(require_role("user"))],
+    dependencies=[Depends(require_api_key)],
 )
 @limiter.limit(settings.RATE_LIMIT)
 async def validate_chart_endpoint(
@@ -230,13 +173,7 @@ async def validate_chart_endpoint(
     """
     if all(
         v is None
-        for v in [
-            chart.chart_type,
-            chart.title,
-            chart.labels,
-            chart.data,
-            chart.objective,
-        ]
+        for v in [chart.chart_type, chart.title, chart.labels, chart.data, chart.objective]
     ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -256,7 +193,7 @@ async def validate_chart_endpoint(
     response_model=List[ValidationResult],
     status_code=status.HTTP_200_OK,
     summary="Validate Multiple Charts (Batch)",
-    dependencies=[Depends(require_role("user"))],
+    dependencies=[Depends(require_api_key)],
 )
 @limiter.limit(settings.RATE_LIMIT_BATCH)
 async def validate_chart_batch(
@@ -296,19 +233,14 @@ async def validate_chart_batch(
     "/history",
     response_model=HistoryResponse,
     summary="Validation History (Paginated)",
-    dependencies=[Depends(require_role("admin"))],
+    dependencies=[Depends(require_api_key)],
 )
 async def get_history(
     db: AsyncSession = Depends(get_db),
     page: int = Query(1, ge=1, description="Page number (1-indexed)."),
     page_size: int = Query(20, ge=1, le=100, description="Records per page."),
     status_filter: Optional[str] = Query(
-        None,
-        alias="status",
-        description=(
-            "Filter results by status. "
-            "Use 'valid' for score >= 70 or 'invalid' for score < 70."
-        ),
+        None, alias="status", description="Filter by 'valid' or 'invalid'."
     ),
     chart_type_filter: Optional[str] = Query(
         None, alias="chart_type", description="Filter by chart type."

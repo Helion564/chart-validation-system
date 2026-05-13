@@ -44,7 +44,7 @@ jobs:
       - name: Install Linting Tools
         run: |
           pip install --upgrade pip
-          pip install -r requirements-dev.txt
+          pip install flake8 black
 
       - name: Run flake8 — syntax errors and undefined names
         run: |
@@ -93,7 +93,7 @@ jobs:
       - name: Install Dependencies
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt -r requirements-dev.txt
+          pip install -r requirements.txt
 
       - name: Run Pytest with Coverage
         run: |
@@ -167,7 +167,7 @@ jobs:
           cache: "pip"
 
       - name: Install Bandit
-        run: pip install -r requirements-dev.txt
+        run: pip install bandit[toml]
 
       - name: Run Bandit — full report (all severities, JSON output)
         # || true: don't fail on medium findings — we capture JSON for review
@@ -210,7 +210,8 @@ jobs:
       - name: Install Dependencies + Safety
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt -r requirements-dev.txt
+          pip install -r requirements.txt
+          pip install "safety>=3.2.0"
 
       - name: Run Safety Dependency Scan
         # `safety scan` is the v3+ command; `safety check` was removed
@@ -296,8 +297,7 @@ jobs:
 
       - name: Smoke Test — Metrics Endpoint
         run: |
-          curl -sf http://localhost:8000/metrics \
-            -H "X-API-Key: ${CI_API_KEY}" | python3 -c "
+          curl -sf http://localhost:8000/metrics | python3 -c "
           import sys, json
           data = json.load(sys.stdin)
           assert 'total_validations' in data, f'Missing metrics fields: {data}'
@@ -308,7 +308,48 @@ jobs:
         if: always()
         run: docker stop smoke-test && docker rm smoke-test || true
 
-# ── 6. SBOM Generation ───────────────────────────────────────
+# ── 6. Trivy Container Scan ──────────────────────────────────
+  trivy-scan:
+    name: "🛡️ Trivy Container Vulnerability Scan"
+    runs-on: ubuntu-latest
+    needs: docker-build
+    permissions:
+      security-events: write   # Required to upload SARIF to GitHub Security
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Rebuild Image for Scanning
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          load: true
+          tags: chart-validation-system:scan-${{ github.sha }}
+          cache-from: type=gha
+
+      - name: Run Trivy Vulnerability Scan
+        # Pinned to a release tag — NOT @master (floating refs are unsafe)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: "chart-validation-system:scan-${{ github.sha }}"
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+          exit-code: "0"
+          ignore-unfixed: true
+
+      - name: Upload Trivy SARIF to GitHub Security Tab
+        # Always upload so findings are visible even if scan failed
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+
+# ── 7. SBOM Generation ───────────────────────────────────────
   sbom:
     name: "📋 SBOM (Software Bill of Materials)"
     runs-on: ubuntu-latest
@@ -343,11 +384,11 @@ jobs:
           name: software-bill-of-materials
           path: sbom.spdx.json
 
-# ── 7. Publish to GHCR (main/master only) ───────────────────
+# ── 8. Publish to GHCR (main/master only) ───────────────────
   publish:
     name: "🚀 Publish to GitHub Container Registry"
     runs-on: ubuntu-latest
-    needs: [sbom]
+    needs: [trivy-scan, sbom]
     # Only publish on main/master — not on PRs; only if upstream jobs succeeded
     if: |
       !failure() &&

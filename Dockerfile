@@ -1,63 +1,63 @@
 # ============================================================
-# Dockerfile — Chart Validation System v3.2.0 (Hardened Alpine)
-# Multi-stage: node-builder + alpine-builder -> alpine runtime
-# Minimal attack surface to pass strict security scans
+# Dockerfile — Chart Validation System v2.0.0
+# Multi-stage build: builder + slim runtime
+# Non-root user for security (CIS Benchmark compliance)
 # ============================================================
 
-# ── Stage 1: Frontend Builder (Node) ────────────────────────
-FROM node:20-alpine AS frontend-builder
-WORKDIR /build-frontend
-COPY frontend/package*.json ./
-RUN npm install --no-audit --no-fund
-COPY frontend/ ./
-RUN npm run build
+# ── Stage 1: Builder ─────────────────────────────────────────
+# To pin to an exact digest (recommended for production), replace the line below with:
+#   FROM python:3.11-slim@sha256:<digest> AS builder
+# Get the current digest with: docker inspect python:3.11-slim --format='{{index .RepoDigests 0}}'
+FROM python:3.11-slim AS builder
 
-# ── Stage 2: Python Builder (Alpine) ────────────────────────
-FROM python:3.11-alpine AS python-builder
-WORKDIR /build-python
+WORKDIR /build
 
-# Install build dependencies for C-extensions (bcrypt, etc.)
-RUN apk add --no-cache \
-    gcc \
-    musl-dev \
-    libffi-dev \
-    openssl-dev \
-    python3-dev \
-    make
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
+# Install Python dependencies into a prefix we can copy
 COPY requirements.txt .
 RUN pip install --upgrade pip \
     && pip install --prefix=/install --no-cache-dir -r requirements.txt
 
-# ── Stage 3: Runtime (Alpine) ────────────────────────────────
-FROM python:3.11-alpine AS runtime
 
-# Patch OS vulnerabilities (standard hardening)
-RUN apk update && apk upgrade --no-cache
+# ── Stage 2: Runtime ─────────────────────────────────────────
+FROM python:3.11-slim AS runtime
+
+# OCI image labels
+LABEL org.opencontainers.image.title="Chart Validation System" \
+      org.opencontainers.image.description="DevSecOps-integrated chart validation API" \
+      org.opencontainers.image.version="2.0.0" \
+      org.opencontainers.image.authors="nageshbhagelli" \
+      org.opencontainers.image.source="https://github.com/nageshbhagelli/chart-validation-system" \
+      org.opencontainers.image.licenses="MIT"
 
 WORKDIR /app
 
-# Copy Python packages from builder
-COPY --from=python-builder /install /usr/local
+# Copy installed packages from builder
+COPY --from=builder /install /usr/local
 
 # Copy application source
 COPY app/ ./app/
+COPY frontend/ ./frontend/
 
-# Copy compiled frontend
-COPY --from=frontend-builder /build-frontend/dist ./frontend/dist
-
-# Create a non-root user (Alpine use addgroup/adduser)
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-RUN chown -R appuser:appgroup /app
+# Create a non-root user (Debian slim: use addgroup/adduser)
+RUN addgroup --gid 1001 --system appgroup \
+    && adduser --uid 1001 --system --ingroup appgroup --no-create-home --shell /bin/false appuser \
+    && chown -R appuser:appgroup /app
 
 USER appuser
+
+# Expose the application port
 EXPOSE 8000
 
-# Container health check (Alpine needs wget or curl installed, but we can use python)
+# Container health check — Docker/Kubernetes liveness probe
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/').read()"
 
-# Default command
+# Default command — production-grade Uvicorn settings
 CMD ["python", "-m", "uvicorn", "app.main:app", \
      "--host", "0.0.0.0", \
      "--port", "8000", \

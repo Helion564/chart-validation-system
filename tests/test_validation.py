@@ -10,7 +10,7 @@ conftest.py handles:
   - Session-scoped TestClient
 """
 
-
+import pytest
 from app.core.config import settings
 
 VALID_HEADERS = {}  # auth disabled via conftest env
@@ -23,9 +23,9 @@ def _post(client, payload: dict, headers: dict = None) -> dict:
     response = client.post(
         "/validate-chart", json=payload, headers=headers or VALID_HEADERS
     )
-    assert (
-        response.status_code == 200
-    ), f"Expected 200, got {response.status_code}: {response.text}"
+    assert response.status_code == 200, (
+        f"Expected 200, got {response.status_code}: {response.text}"
+    )
     return response.json()
 
 

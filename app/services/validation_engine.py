@@ -21,7 +21,7 @@ Weights (must sum to 1.0):
 import logging
 import statistics
 from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import Dict, List, Optional, Tuple
 
 from app.core.config import settings
 from app.models.schemas import ChartData, ScoreBreakdown, ValidationResult
@@ -41,40 +41,40 @@ DIMENSION_WEIGHTS: Dict[str, float] = {
 # Keys are lowercase keywords; values are sets of valid chart_types
 OBJECTIVE_KEYWORD_MAP: Dict[str, List[str]] = {
     # Trend / time-series
-    "trend": ["line", "area"],
-    "over time": ["line", "area"],
-    "growth": ["line", "bar"],
-    "progress": ["line", "bar"],
-    "timeline": ["line"],
+    "trend":       ["line", "area"],
+    "over time":   ["line", "area"],
+    "growth":      ["line", "bar"],
+    "progress":    ["line", "bar"],
+    "timeline":    ["line"],
     "time series": ["line"],
-    "forecast": ["line"],
-    "projection": ["line"],
+    "forecast":    ["line"],
+    "projection":  ["line"],
     # Comparison
-    "compare": ["bar", "grouped bar"],
-    "comparison": ["bar", "grouped bar"],
-    "contrast": ["bar", "grouped bar"],
-    "rank": ["bar"],
-    "ranking": ["bar"],
-    "versus": ["bar", "scatter"],
-    "vs": ["bar", "scatter"],
+    "compare":     ["bar", "grouped bar"],
+    "comparison":  ["bar", "grouped bar"],
+    "contrast":    ["bar", "grouped bar"],
+    "rank":        ["bar"],
+    "ranking":     ["bar"],
+    "versus":      ["bar", "scatter"],
+    "vs":          ["bar", "scatter"],
     # Distribution
     "distribution": ["histogram", "box"],
-    "spread": ["histogram", "scatter"],
-    "frequency": ["histogram", "bar"],
-    "range": ["histogram", "box"],
-    "variability": ["histogram", "scatter"],
+    "spread":       ["histogram", "scatter"],
+    "frequency":    ["histogram", "bar"],
+    "range":        ["histogram", "box"],
+    "variability":  ["histogram", "scatter"],
     # Proportion / part-of-whole
-    "proportion": ["pie", "donut"],
-    "percentage": ["pie", "donut", "bar"],
-    "share": ["pie", "donut"],
-    "breakdown": ["pie", "bar"],
+    "proportion":  ["pie", "donut"],
+    "percentage":  ["pie", "donut", "bar"],
+    "share":       ["pie", "donut"],
+    "breakdown":   ["pie", "bar"],
     "composition": ["pie", "bar"],
-    "part of": ["pie"],
+    "part of":     ["pie"],
     # Correlation / relationship
     "correlation": ["scatter"],
     "relationship": ["scatter", "line"],
-    "scatter": ["scatter"],
-    "cluster": ["scatter"],
+    "scatter":     ["scatter"],
+    "cluster":     ["scatter"],
 }
 
 # ─── Internal Data Classes ───────────────────────────────────────────────────
@@ -84,7 +84,7 @@ OBJECTIVE_KEYWORD_MAP: Dict[str, List[str]] = {
 class DimensionResult:
     """Result of evaluating a single scoring dimension."""
 
-    score: int  # 0-100
+    score: int                          # 0-100
     issues: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
     recommendations: List[str] = field(default_factory=list)
@@ -111,8 +111,12 @@ def _score_structure(chart: ChartData) -> DimensionResult:
     # Rule S1 — data must be present
     if not chart.data:
         penalty += 40
-        issues.append("Missing or empty 'data' field — no data points to validate.")
-        recommendations.append("Provide a non-empty 'data' array with numeric values.")
+        issues.append(
+            "Missing or empty 'data' field — no data points to validate."
+        )
+        recommendations.append(
+            "Provide a non-empty 'data' array with numeric values."
+        )
     elif len(chart.data) < settings.MIN_DATA_POINTS:
         penalty += 20
         issues.append(
@@ -132,7 +136,8 @@ def _score_structure(chart: ChartData) -> DimensionResult:
         penalty += 30
         allowed = ", ".join(settings.ALLOWED_CHART_TYPES)
         issues.append(
-            f"Unsupported chart type '{chart.chart_type}'. " f"Allowed: {allowed}."
+            f"Unsupported chart type '{chart.chart_type}'. "
+            f"Allowed: {allowed}."
         )
         recommendations.append(
             f"Change 'chart_type' to one of the supported types: {allowed}."
@@ -192,7 +197,9 @@ def _score_objective_match(chart: ChartData) -> DimensionResult:
     # Rule O1 — objective must be present
     if not chart.objective or not chart.objective.strip():
         penalty += 40
-        issues.append("Missing 'objective' field — chart purpose is unclear.")
+        issues.append(
+            "Missing 'objective' field — chart purpose is unclear."
+        )
         recommendations.append(
             "State the chart's purpose (e.g., 'Compare monthly revenue across regions')."
         )
@@ -333,8 +340,7 @@ def _score_data_quality(chart: ChartData) -> DimensionResult:
             lower_fence = q1 - 1.5 * iqr
             upper_fence = q3 + 1.5 * iqr
             outlier_indices = [
-                i
-                for i, v in enumerate(numeric_values)
+                i for i, v in enumerate(numeric_values)
                 if v < lower_fence or v > upper_fence
             ]
             if outlier_indices:
@@ -363,7 +369,9 @@ def _score_data_quality(chart: ChartData) -> DimensionResult:
                 f"Y-axis range is invalid: min ({chart.y_axis.min}) must be "
                 f"less than max ({chart.y_axis.max})."
             )
-            recommendations.append("Set y_axis.min strictly less than y_axis.max.")
+            recommendations.append(
+                "Set y_axis.min strictly less than y_axis.max."
+            )
         elif numeric_values and chart.y_axis.min is not None:
             data_min = min(numeric_values)
             if chart.y_axis.min > data_min:
@@ -388,7 +396,9 @@ def _score_data_quality(chart: ChartData) -> DimensionResult:
                 f"X-axis range is invalid: min ({chart.x_axis.min}) must be "
                 f"less than max ({chart.x_axis.max})."
             )
-            recommendations.append("Set x_axis.min strictly less than x_axis.max.")
+            recommendations.append(
+                "Set x_axis.min strictly less than x_axis.max."
+            )
 
     # Rule D4 — all-zero data warning
     if numeric_values and all(v == 0 for v in numeric_values):
@@ -459,7 +469,8 @@ def _score_viz_best_practices(chart: ChartData) -> DimensionResult:
             "using a horizontal bar chart for readability."
         )
         recommendations.append(
-            "Limit bar charts to 20 bars. " "Sort bars by value for easier comparison."
+            "Limit bar charts to 20 bars. "
+            "Sort bars by value for easier comparison."
         )
 
     # Rule V4 — bar/line charts should start at zero
